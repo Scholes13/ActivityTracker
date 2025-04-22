@@ -101,8 +101,28 @@ class ActivityResource extends Resource
                             ->preserveFilenames()
                             ->maxSize(5120) // 5MB
                             ->columnSpanFull(),
+                    ]),
+                    
+                // Add new section for external submission info
+                Forms\Components\Section::make('External Submission Information')
+                    ->description('Information about activities submitted through the public form')
+                    ->schema([
+                        Forms\Components\TextInput::make('external_id')
+                            ->label('External Submission ID')
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('external_name')
+                            ->label('Submitter Name')
+                            ->disabled()
+                            ->dehydrated(false),
+                        Forms\Components\TextInput::make('external_email')
+                            ->label('Submitter Email')
+                            ->disabled()
+                            ->email()
+                            ->dehydrated(false),
                     ])
-                    ->columns(['default' => 1, 'md' => 4]),
+                    ->visible(fn ($record) => $record && !is_null($record->external_id))
+                    ->columns(2),
             ]);
     }
 
@@ -130,6 +150,21 @@ class ActivityResource extends Resource
                     ->label('Ditugaskan Kepada')
                     ->searchable()
                     ->sortable(),
+                Tables\Columns\IconColumn::make('isExternalSubmission')
+                    ->label('External')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-globe-alt')
+                    ->falseIcon('heroicon-o-user')
+                    ->trueColor('primary')
+                    ->alignCenter()
+                    ->sortable(false)
+                    ->toggleable(isToggledHiddenByDefault: false),
+                Tables\Columns\TextColumn::make('external_name')
+                    ->label('Submitted By')
+                    ->searchable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->visible(fn ($livewire) => auth()->user()->role === 'admin' || auth()->user()->role === 'leader')
+                    ->placeholder('N/A'),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
@@ -163,6 +198,10 @@ class ActivityResource extends Resource
                         'inprogress' => 'In Progress',
                         'done' => 'Done',
                     ]),
+                Tables\Filters\Filter::make('external_submissions')
+                    ->label('External Submissions')
+                    ->query(fn (Builder $query) => $query->whereNotNull('external_id'))
+                    ->toggle(),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([

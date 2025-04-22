@@ -21,6 +21,9 @@ class Activity extends Model
         'attachment',
         'deadline',
         'completed_at',
+        'external_id',
+        'external_name',
+        'external_email',
     ];
 
     protected $casts = [
@@ -61,5 +64,10 @@ class Activity extends Model
     public function isDone(): bool
     {
         return $this->status === 'done';
+    }
+
+    public function isExternalSubmission(): bool
+    {
+        return !is_null($this->external_id);
     }
 }
